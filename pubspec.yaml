@@ -62,6 +62,8 @@ flutter:
     - assets/images/player_robot_pixel.png
     - assets/images/enemy_robot_red.png
     - assets/images/boss_robot_red.png
+    - assets/images/enemy_robot_rainbow.png
+    - assets/images/enemy_robot_bomber.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
