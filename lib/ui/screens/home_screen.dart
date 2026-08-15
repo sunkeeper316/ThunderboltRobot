@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import '../widgets/glow_button.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, required this.onStart});
+  const HomeScreen({super.key, required this.onStart, this.onStageSelect});
   final VoidCallback onStart;
+  final VoidCallback? onStageSelect;
 
   @override
   Widget build(BuildContext context) => Stack(
@@ -51,6 +52,25 @@ class HomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               GlowButton(label: '開 始 任 務', onTap: onStart),
+              if (onStageSelect != null) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton.icon(
+                    onPressed: onStageSelect,
+                    icon: const Icon(Icons.map_outlined),
+                    label: const Text(
+                      '選 擇 關 卡',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF85E9FF),
+                      side: const BorderSide(color: Color(0xFF37BFD9)),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
             ],
           ),

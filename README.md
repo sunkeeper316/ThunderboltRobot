@@ -9,6 +9,8 @@
 3. 擊破 Boss 後直接進入下一關，保留血量與武器等級。
 4. 擊破第三關 Boss 後完成任務。
 
+關卡通關後會永久解鎖下一關。首次遊玩只有「開始任務」；通過第一關後，首頁會新增「選擇關卡」按鈕，可直接進入已解鎖關卡。進度使用 `shared_preferences` 儲存在裝置或瀏覽器本機，不需要後端。
+
 遊戲固定為直向正立。Android 與 iOS 不支援旋轉成橫向；Web 版維持直式遊戲版面。
 
 ## 操作
@@ -97,6 +99,8 @@ lib/
     ├── screens/                # 首頁、選機體、結果與流程
     └── widgets/                # 共用按鈕與機體數值元件
 ```
+
+關卡解鎖存檔位於 `lib/services/progress_service.dart`，關卡選擇畫面位於 `lib/ui/screens/stage_select_screen.dart`。
 
 遊戲圖片位於 `assets/images/`。首頁、玩家、敵人與三個 Boss 都使用原創生成素材，遊戲特效由 Flame Canvas 即時繪製。
 

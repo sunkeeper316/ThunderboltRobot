@@ -15,10 +15,17 @@ import 'entities/star.dart';
 import 'entities/treasure.dart';
 
 typedef FinishCallback = void Function(bool won, int score);
+typedef StageClearedCallback = void Function(int stage);
 
 class ThunderboltGame extends FlameGame with DragCallbacks {
-  ThunderboltGame({required this.onFinished});
+  ThunderboltGame({
+    required this.onFinished,
+    this.initialStage = 1,
+    this.onStageCleared,
+  }) : stage = initialStage;
   final FinishCallback onFinished;
+  final StageClearedCallback? onStageCleared;
+  final int initialStage;
   final rng = Random();
   final bullets = <Shot>[];
   final enemies = <Foe>[];
@@ -34,7 +41,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       spawnClock = 0,
       missileClock = 0;
   int score = 0;
-  int stage = 1;
+  int stage;
   int powerLevel = 0;
   int missileLevel = 0;
   int lightningLevel = 0;
@@ -270,6 +277,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
         if (bo.hp <= 0) {
           score += 5000;
           _boom(bo.x, bo.y, const Color(0xFF62EAFF), count: 80);
+          onStageCleared?.call(stage);
           if (stage < 3) {
             _startNextStage();
           } else {
