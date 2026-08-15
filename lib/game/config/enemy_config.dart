@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-enum EnemyTier { small, medium, elite, bomber }
+enum EnemyTier { small, medium, elite, bomber, drill }
 
 extension EnemyTierConfig on EnemyTier {
   int get hp => switch (this) {
@@ -8,6 +8,7 @@ extension EnemyTierConfig on EnemyTier {
     EnemyTier.medium => 3,
     EnemyTier.elite => 5,
     EnemyTier.bomber => 4,
+    EnemyTier.drill => 3,
   };
 
   double get radius => switch (this) {
@@ -15,6 +16,7 @@ extension EnemyTierConfig on EnemyTier {
     EnemyTier.medium => 29,
     EnemyTier.elite => 36,
     EnemyTier.bomber => 32,
+    EnemyTier.drill => 26,
   };
 
   double get speed => switch (this) {
@@ -22,6 +24,7 @@ extension EnemyTierConfig on EnemyTier {
     EnemyTier.medium => 115,
     EnemyTier.elite => 88,
     EnemyTier.bomber => 105,
+    EnemyTier.drill => 190,
   };
 
   double get fireInterval => switch (this) {
@@ -29,6 +32,7 @@ extension EnemyTierConfig on EnemyTier {
     EnemyTier.medium => 1.7,
     EnemyTier.elite => 1.15,
     EnemyTier.bomber => 1.8,
+    EnemyTier.drill => 1.9,
   };
 
   int get score => switch (this) {
@@ -36,6 +40,7 @@ extension EnemyTierConfig on EnemyTier {
     EnemyTier.medium => 250,
     EnemyTier.elite => 600,
     EnemyTier.bomber => 400,
+    EnemyTier.drill => 350,
   };
 
   double get spriteScale => switch (this) {
@@ -43,6 +48,7 @@ extension EnemyTierConfig on EnemyTier {
     EnemyTier.medium => 1.05,
     EnemyTier.elite => 1.12,
     EnemyTier.bomber => 1.06,
+    EnemyTier.drill => 1,
   };
 }
 
@@ -105,4 +111,5 @@ abstract final class EnemyConfig {
   static const Rect bomberSpriteSource = Rect.fromLTWH(117, 77, 900, 1171);
   static const Rect battleshipSpriteSource = Rect.fromLTWH(23, 45, 1208, 1181);
   static const Rect drillBossSpriteSource = Rect.fromLTWH(30, 15, 1146, 1280);
+  static const Rect drillEnemySpriteSource = Rect.fromLTWH(163, 211, 1181, 543);
 }

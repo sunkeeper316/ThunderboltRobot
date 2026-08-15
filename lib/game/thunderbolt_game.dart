@@ -48,6 +48,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
   late final ui.Image bomberEnemySprite;
   late final ui.Image battleshipBossSprite;
   late final ui.Image drillBossSprite;
+  late final ui.Image drillEnemySprite;
 
   @override
   Future<void> onLoad() async {
@@ -58,6 +59,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
     bomberEnemySprite = await images.load('enemy_robot_bomber.png');
     battleshipBossSprite = await images.load('boss_battleship_red.png');
     drillBossSprite = await images.load('boss_drill_robot_red_blue.png');
+    drillEnemySprite = await images.load('enemy_drill_horizontal.png');
     player = Vector2(size.x / 2, size.y * .78);
     for (var i = 0; i < 85; i++) {
       stars.add(
@@ -150,21 +152,31 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
         stageElapsed >= eliteSchedule[scheduledElites];
     final tier = eliteDue
         ? EnemyTier.elite
+        : stage == 3 && roll < .28
+        ? EnemyTier.drill
         : stage == 2 && roll < .2
         ? EnemyTier.bomber
         : stageElapsed > 6 && roll < .52
         ? EnemyTier.medium
         : EnemyTier.small;
     if (eliteDue) scheduledElites++;
+    final horizontal = tier == EnemyTier.drill;
+    final fromLeft = rng.nextBool();
     enemies.add(
       Foe(
-        25 + rng.nextDouble() * (size.x - 50),
-        -30,
+        horizontal
+            ? (fromLeft ? -45 : size.x + 45)
+            : 25 + rng.nextDouble() * (size.x - 50),
+        horizontal ? 110 + rng.nextDouble() * max(80, size.y * .62 - 110) : -30,
         tier.radius,
         tier.hp,
         tier.speed,
         rng.nextDouble() * 6.28,
         tier,
+        movement: horizontal
+            ? EnemyMovement.horizontal
+            : EnemyMovement.downward,
+        horizontalDirection: fromLeft ? 1 : -1,
       ),
     );
   }
@@ -343,12 +355,17 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
   void _updateEnemies(double dt) {
     for (final e in enemies) {
       if (e.dead) continue;
-      // Scheduled elite robots hold formation until defeated, guaranteeing
-      // all five treasure opportunities remain available during the stage.
-      if (e.tier != EnemyTier.elite || e.y < size.y * .42) {
-        e.y += e.speed * dt;
+      if (e.movement == EnemyMovement.horizontal) {
+        e.x += e.speed * e.horizontalDirection * dt;
+        e.y += sin(elapsed * 3 + e.phase) * 12 * dt;
+      } else {
+        // Scheduled elite robots hold formation until defeated, guaranteeing
+        // all treasure opportunities remain available during the stage.
+        if (e.tier != EnemyTier.elite || e.y < size.y * .42) {
+          e.y += e.speed * dt;
+        }
+        e.x += sin(elapsed * 2 + e.phase) * 38 * dt;
       }
-      e.x += sin(elapsed * 2 + e.phase) * 38 * dt;
       e.fire += dt;
       if (e.fire > e.tier.fireInterval) {
         e.fire = 0;
@@ -364,7 +381,13 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
         }
       }
     }
-    enemies.removeWhere((e) => e.dead || e.y > size.y + 50);
+    enemies.removeWhere(
+      (e) =>
+          e.dead ||
+          e.y > size.y + 50 ||
+          (e.movement == EnemyMovement.horizontal &&
+              (e.x < -80 || e.x > size.x + 80)),
+    );
   }
 
   void _updateBoss(double dt) {
@@ -650,13 +673,28 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
     final sprite = switch (e.tier) {
       EnemyTier.elite => rainbowEnemySprite,
       EnemyTier.bomber => bomberEnemySprite,
+      EnemyTier.drill => drillEnemySprite,
       _ => enemySprite,
     };
     final source = switch (e.tier) {
       EnemyTier.elite => EnemyConfig.rainbowSpriteSource,
       EnemyTier.bomber => EnemyConfig.bomberSpriteSource,
+      EnemyTier.drill => EnemyConfig.drillEnemySpriteSource,
       _ => EnemyConfig.redSpriteSource,
     };
+    if (e.tier == EnemyTier.drill) {
+      c.save();
+      c.translate(e.x, e.y);
+      c.scale(e.horizontalDirection, 1);
+      c.drawImageRect(
+        sprite,
+        source,
+        const Rect.fromLTWH(-43, -21, 86, 42),
+        Paint()..filterQuality = FilterQuality.none,
+      );
+      c.restore();
+      return;
+    }
     final scale = e.tier.spriteScale;
     c.drawImageRect(
       sprite,
