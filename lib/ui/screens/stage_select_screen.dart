@@ -16,7 +16,7 @@ class StageSelectScreen extends StatelessWidget {
   static const _stageDescriptions = [
     '75 秒 · VOID REAPER',
     '110 秒 · CRIMSON DREADNOUGHT',
-    '225 秒 · AZURE DRILL TYRANT',
+    '110 秒 · AZURE DRILL TYRANT',
   ];
 
   @override
