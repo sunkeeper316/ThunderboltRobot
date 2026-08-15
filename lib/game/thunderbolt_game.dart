@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'config/enemy_config.dart';
 import 'config/player_config.dart';
 import 'config/primary_weapon_config.dart';
+import 'config/secondary_weapon_config.dart';
 import 'entities/boss.dart';
 import 'entities/explosion_zone.dart';
 import 'entities/foe.dart';
@@ -23,6 +24,8 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
     required this.onFinished,
     this.initialStage = 1,
     this.primaryWeapon = PrimaryWeaponType.cannon,
+    this.bWeapon = SecondaryWeaponType.homingMissile,
+    this.cWeapon = SecondaryWeaponType.lightning,
     this.onStageCleared,
     this.hudTopPadding = 0,
   }) : stage = initialStage;
@@ -30,6 +33,8 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
   final StageClearedCallback? onStageCleared;
   final int initialStage;
   final PrimaryWeaponType primaryWeapon;
+  final SecondaryWeaponType bWeapon;
+  final SecondaryWeaponType cWeapon;
   final double hudTopPadding;
   final rng = Random();
   final bullets = <Shot>[];
@@ -132,21 +137,13 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       laserDamageClock = 0;
       _applyPrimaryLaserDamage();
     }
-    if (missileLevel > 0 && missileClock > PlayerConfig.missileInterval) {
+    final hasTimedSecondary =
+        (_usesMissileInterval(bWeapon) && missileLevel > 0) ||
+        (_usesMissileInterval(cWeapon) && lightningLevel > 0);
+    if (hasTimedSecondary && missileClock > PlayerConfig.missileInterval) {
       missileClock = 0;
-      for (var i = 0; i < missileLevel; i++) {
-        final offset = (i - (missileLevel - 1) / 2) * 13;
-        bullets.add(
-          Shot(
-            player.x + offset,
-            player.y - 20 + i.abs() * 2,
-            PlayerConfig.missileSpeed,
-            true,
-            kind: ShotKind.missile,
-            damage: PlayerConfig.missileDamage,
-          ),
-        );
-      }
+      _fireTimedSecondary(bWeapon, missileLevel);
+      _fireTimedSecondary(cWeapon, lightningLevel);
     }
     final spawnInterval = stage == 3
         ? max(.48, .95 - stageElapsed * .004)
@@ -223,36 +220,103 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
         );
       }
     }
-    if (lightningLevel > 0) {
-      final halfFan = (lightningLevel - 1) * 6.0;
-      for (var i = 0; i < lightningLevel; i++) {
-        final angleDegrees = lightningLevel == 1
-            ? 45.0
-            : 45 - halfFan + (halfFan * 2 * i / (lightningLevel - 1));
-        final angle = angleDegrees * pi / 180;
-        final horizontalSpeed = sin(angle) * PlayerConfig.lightningTravelSpeed;
-        final verticalSpeed = -cos(angle) * PlayerConfig.lightningTravelSpeed;
-        bullets.addAll([
-          Shot(
-            player.x - 18,
-            player.y - 24,
-            verticalSpeed,
-            true,
-            dx: -horizontalSpeed,
-            kind: ShotKind.lightning,
-            damage: PlayerConfig.lightningDamage,
-          ),
-          Shot(
-            player.x + 18,
-            player.y - 24,
-            verticalSpeed,
-            true,
-            dx: horizontalSpeed,
-            kind: ShotKind.lightning,
-            damage: PlayerConfig.lightningDamage,
-          ),
-        ]);
-      }
+    if (bWeapon == SecondaryWeaponType.lightning && missileLevel > 0) {
+      _fireLightning(missileLevel);
+    }
+    if (cWeapon == SecondaryWeaponType.lightning && lightningLevel > 0) {
+      _fireLightning(lightningLevel);
+    }
+  }
+
+  void _fireLightning(int level) {
+    final halfFan = (level - 1) * 6.0;
+    for (var i = 0; i < level; i++) {
+      final angleDegrees = level == 1
+          ? 45.0
+          : 45 - halfFan + (halfFan * 2 * i / (level - 1));
+      final angle = angleDegrees * pi / 180;
+      final horizontalSpeed = sin(angle) * PlayerConfig.lightningTravelSpeed;
+      final verticalSpeed = -cos(angle) * PlayerConfig.lightningTravelSpeed;
+      bullets.addAll([
+        Shot(
+          player.x - 18,
+          player.y - 24,
+          verticalSpeed,
+          true,
+          dx: -horizontalSpeed,
+          kind: ShotKind.lightning,
+          damage: PlayerConfig.lightningDamage,
+        ),
+        Shot(
+          player.x + 18,
+          player.y - 24,
+          verticalSpeed,
+          true,
+          dx: horizontalSpeed,
+          kind: ShotKind.lightning,
+          damage: PlayerConfig.lightningDamage,
+        ),
+      ]);
+    }
+  }
+
+  bool _usesMissileInterval(SecondaryWeaponType weapon) =>
+      weapon != SecondaryWeaponType.lightning;
+
+  void _fireTimedSecondary(SecondaryWeaponType weapon, int level) {
+    if (level <= 0) return;
+    switch (weapon) {
+      case SecondaryWeaponType.homingMissile:
+        _fireHomingMissiles(level);
+      case SecondaryWeaponType.straightMissile:
+        _fireStraightMissiles(level);
+      case SecondaryWeaponType.lightning:
+        return;
+    }
+  }
+
+  void _fireHomingMissiles(int level) {
+    for (var i = 0; i < level; i++) {
+      final offset = (i - (level - 1) / 2) * 13;
+      bullets.add(
+        Shot(
+          player.x + offset,
+          player.y - 20 + i.abs() * 2,
+          PlayerConfig.missileSpeed,
+          true,
+          kind: ShotKind.missile,
+          damage: PlayerConfig.missileDamage,
+        ),
+      );
+    }
+  }
+
+  void _fireStraightMissiles(int level) {
+    final travelSpeed = PlayerConfig.missileSpeed.abs();
+    for (var i = 0; i < level; i++) {
+      final angle = SecondaryWeaponConfig.straightMissileAngleFor(i) * pi / 180;
+      final horizontalSpeed = sin(angle) * travelSpeed;
+      final verticalSpeed = -cos(angle) * travelSpeed;
+      bullets.addAll([
+        Shot(
+          player.x - 15,
+          player.y - 25,
+          verticalSpeed,
+          true,
+          dx: -horizontalSpeed,
+          kind: ShotKind.straightMissile,
+          damage: PlayerConfig.missileDamage,
+        ),
+        Shot(
+          player.x + 15,
+          player.y - 25,
+          verticalSpeed,
+          true,
+          dx: horizontalSpeed,
+          kind: ShotKind.straightMissile,
+          damage: PlayerConfig.missileDamage,
+        ),
+      ]);
     }
   }
 
@@ -646,6 +710,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
     for (final b in bullets) {
       final color = switch (b.kind) {
         ShotKind.missile => const Color(0xFFFFD34F),
+        ShotKind.straightMissile => const Color(0xFFFF8A3D),
         ShotKind.lightning => const Color(0xFFB96CFF),
         ShotKind.bossDrill => const Color(0xFF36DFFF),
         ShotKind.normal =>
@@ -655,6 +720,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       final end = Offset(b.x - b.dx * .025, b.y + (b.friendly ? 20 : -16));
       final coreColor = switch (b.kind) {
         ShotKind.missile => const Color(0xFFFFFFFF),
+        ShotKind.straightMissile => const Color(0xFFFFF2C7),
         ShotKind.lightning => const Color(0xFFFFFFFF),
         ShotKind.bossDrill => const Color(0xFFFFFFFF),
         ShotKind.normal =>

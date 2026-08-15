@@ -1,4 +1,4 @@
-enum ShotKind { normal, missile, lightning, bossDrill }
+enum ShotKind { normal, missile, straightMissile, lightning, bossDrill }
 
 class Shot {
   Shot(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../game/config/primary_weapon_config.dart';
+import '../../game/config/secondary_weapon_config.dart';
 import '../widgets/glow_button.dart';
 import '../widgets/robot_stat.dart';
 
@@ -13,7 +14,12 @@ class RobotSelectScreen extends StatefulWidget {
   });
 
   final int stage;
-  final ValueChanged<PrimaryWeaponType> onStart;
+  final void Function(
+    PrimaryWeaponType primary,
+    SecondaryWeaponType bWeapon,
+    SecondaryWeaponType cWeapon,
+  )
+  onStart;
   final VoidCallback onBack;
 
   @override
@@ -22,6 +28,22 @@ class RobotSelectScreen extends StatefulWidget {
 
 class _RobotSelectScreenState extends State<RobotSelectScreen> {
   PrimaryWeaponType selectedWeapon = PrimaryWeaponType.cannon;
+  SecondaryWeaponType selectedBWeapon = SecondaryWeaponType.homingMissile;
+  SecondaryWeaponType selectedCWeapon = SecondaryWeaponType.lightning;
+
+  void _selectBWeapon(SecondaryWeaponType weapon) {
+    setState(() {
+      if (weapon == selectedCWeapon) selectedCWeapon = selectedBWeapon;
+      selectedBWeapon = weapon;
+    });
+  }
+
+  void _selectCWeapon(SecondaryWeaponType weapon) {
+    setState(() {
+      if (weapon == selectedBWeapon) selectedBWeapon = selectedCWeapon;
+      selectedCWeapon = weapon;
+    });
+  }
 
   @override
   Widget build(BuildContext context) => Container(
@@ -43,7 +65,7 @@ class _RobotSelectScreenState extends State<RobotSelectScreen> {
               ),
               const Expanded(
                 child: Text(
-                  '選擇機體與主武器',
+                  '選擇機體與武器',
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -148,15 +170,86 @@ class _RobotSelectScreenState extends State<RobotSelectScreen> {
             ),
           ),
           Padding(
+            padding: const EdgeInsets.fromLTRB(22, 0, 22, 7),
+            child: _SecondaryWeaponSelector(
+              slot: 'B',
+              selected: selectedBWeapon,
+              onSelected: _selectBWeapon,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(22, 0, 22, 12),
+            child: _SecondaryWeaponSelector(
+              slot: 'C',
+              selected: selectedCWeapon,
+              onSelected: _selectCWeapon,
+            ),
+          ),
+          Padding(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
             child: GlowButton(
               label: '出 擊',
-              onTap: () => widget.onStart(selectedWeapon),
+              onTap: () => widget.onStart(
+                selectedWeapon,
+                selectedBWeapon,
+                selectedCWeapon,
+              ),
             ),
           ),
         ],
       ),
     ),
+  );
+}
+
+class _SecondaryWeaponSelector extends StatelessWidget {
+  const _SecondaryWeaponSelector({
+    required this.slot,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String slot;
+  final SecondaryWeaponType selected;
+  final ValueChanged<SecondaryWeaponType> onSelected;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      SizedBox(
+        width: 30,
+        child: Text(
+          slot,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+        ),
+      ),
+      ...SecondaryWeaponType.values.map(
+        (weapon) => Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 5),
+            child: ChoiceChip(
+              label: SizedBox(
+                width: double.infinity,
+                child: Text(
+                  weapon.shortName,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 11),
+                ),
+              ),
+              selected: selected == weapon,
+              onSelected: (_) => onSelected(weapon),
+              showCheckmark: false,
+              selectedColor: const Color(0xFF167E9B),
+              side: BorderSide(
+                color: selected == weapon
+                    ? const Color(0xFF55E8FF)
+                    : Colors.white24,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ],
   );
 }
 
@@ -168,6 +261,31 @@ class _WeaponChoice extends StatelessWidget {
   });
 
   final PrimaryWeaponType weapon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => _ChoiceCard(
+    title: weapon.displayName,
+    description: weapon.description,
+    icon: weapon == PrimaryWeaponType.cannon ? Icons.blur_on : Icons.flash_on,
+    selected: selected,
+    onTap: onTap,
+  );
+}
+
+class _ChoiceCard extends StatelessWidget {
+  const _ChoiceCard({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String title;
+  final String description;
+  final IconData icon;
   final bool selected;
   final VoidCallback onTap;
 
@@ -193,16 +311,10 @@ class _WeaponChoice extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
-                  weapon == PrimaryWeaponType.cannon
-                      ? Icons.blur_on
-                      : Icons.flash_on,
-                  size: 18,
-                  color: const Color(0xFF70EAFF),
-                ),
+                Icon(icon, size: 18, color: const Color(0xFF70EAFF)),
                 const SizedBox(width: 5),
                 Text(
-                  weapon.displayName,
+                  title,
                   style: const TextStyle(fontWeight: FontWeight.w900),
                 ),
                 if (selected) ...[
@@ -213,7 +325,7 @@ class _WeaponChoice extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              weapon.description,
+              description,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 11, color: Color(0xFF9CC9DA)),

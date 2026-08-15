@@ -21,18 +21,19 @@
 
 ## 玩家與武器
 
-玩家初始 HP 為 `100`。出擊前可選擇 A 主武器，從選關模式進入也會先顯示主武器選擇畫面；B 導彈與 C 自然閃電是附屬武器。所有武器最高可升級 5 次，滿級後 HUD 會顯示 `MAX`。撿到已滿級的武器寶物時，會從其他尚未滿級的武器中隨機升級一種；若三種武器都已滿級，再取得任何寶物會回復 `10 HP`（不超過 100），並照常取得寶物分數。
+玩家初始 HP 為 `100`。出擊前可選擇 A 主武器，B、C 則是兩個附屬武器槽；從選關模式進入同樣會先顯示武器選擇畫面。B、C 可從追蹤導彈、自然閃電、直線飛彈三種武器中任選兩種，但不能重複；預設為 `B＝追蹤導彈、C＝自然閃電`。選到另一槽正在使用的武器時，兩槽會自動交換。所有武器最高可升級 5 次，滿級後 HUD 會顯示 `MAX`。寶物字母會升級對應槽位；若該槽滿級，會隨機升級其他未滿級槽位。三個槽位全滿後再取得寶物會回復 `10 HP`（不超過 100），並照常取得寶物分數。
 
 | 武器 | 寶物 | 單發傷害 | 重複取得效果 |
 |---|---:|---:|---|
 | 主炮（A 選項） | A | 1 | 射擊間隔 0.16 秒，每級增加一條主炮彈道 |
 | 直線雷射（A 選項） | A | 2～7 | 持續直線貫穿，每 0.5 秒判定；每級增加寬度與判定傷害 |
-| 追蹤導彈 | B | 4 | 每級增加一枚同時發射的導彈 |
-| 自然閃電 | C | 2 | 每級增加左右閃電數量並擴大扇形角度 |
+| 追蹤導彈 | B 或 C | 4 | 每級增加一枚同時發射的導彈 |
+| 自然閃電 | B 或 C | 2 | 每級增加左右閃電數量並擴大扇形角度 |
+| 直線飛彈 | B 或 C | 4 | 0.78 秒一次；第 1 級從 ±30° 發射，之後每級向外增加 15° 的一對飛彈 |
 
 閃電具有不規則主幹、交錯分支、藍白核心、光暈與快速脈衝。C1 從左右約 45° 發射，升級後逐步擴大成扇形雷網。
 
-一般玩家數值集中在 [`lib/game/config/player_config.dart`](lib/game/config/player_config.dart)，A 主武器種類與直線雷射數值位於 [`lib/game/config/primary_weapon_config.dart`](lib/game/config/primary_weapon_config.dart)。
+一般玩家數值集中在 [`lib/game/config/player_config.dart`](lib/game/config/player_config.dart)，A 主武器種類與直線雷射數值位於 [`lib/game/config/primary_weapon_config.dart`](lib/game/config/primary_weapon_config.dart)，B、C 武器選項與直線飛彈角度位於 [`lib/game/config/secondary_weapon_config.dart`](lib/game/config/secondary_weapon_config.dart)。
 
 ## 敵人
 
