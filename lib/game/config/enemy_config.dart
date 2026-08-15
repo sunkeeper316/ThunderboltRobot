@@ -3,6 +3,16 @@ import 'dart:ui';
 enum EnemyTier { small, medium, elite, bomber, drill }
 
 extension EnemyTierConfig on EnemyTier {
+  int get damage => switch (this) {
+    EnemyTier.small => 1,
+    EnemyTier.medium => 2,
+    EnemyTier.elite => 5,
+    EnemyTier.bomber => 10,
+    EnemyTier.drill => 30,
+  };
+
+  bool get canShoot => this != EnemyTier.drill;
+
   int get hp => switch (this) {
     EnemyTier.small => 1,
     EnemyTier.medium => 3,
@@ -95,6 +105,11 @@ abstract final class EnemyConfig {
     1 => 260,
     2 => 420,
     _ => 650,
+  };
+  static int bossDamageFor(int stage) => switch (stage) {
+    1 => 5,
+    2 => 10,
+    _ => 15,
   };
   static double bossHitRadiusFor(int stage) => switch (stage) {
     1 => 58,

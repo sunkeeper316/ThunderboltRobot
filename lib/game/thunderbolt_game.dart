@@ -291,7 +291,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
     for (final b in bullets.where((b) => !b.friendly && !b.dead)) {
       if ((Offset(b.x, b.y) - Offset(player.x, player.y)).distance < 19) {
         b.dead = true;
-        hp -= 9;
+        hp -= b.damage;
         _boom(player.x, player.y, const Color(0xFF55DDFF), count: 8);
       }
     }
@@ -380,14 +380,16 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
         e.x += sin(elapsed * 2 + e.phase) * 38 * dt;
       }
       e.fire += dt;
-      if (e.fire > e.tier.fireInterval) {
+      if (e.tier.canShoot && e.fire > e.tier.fireInterval) {
         e.fire = 0;
-        bullets.add(Shot(e.x, e.y + e.radius, 260, false));
+        bullets.add(
+          Shot(e.x, e.y + e.radius, 260, false, damage: e.tier.damage),
+        );
       }
       if ((Offset(e.x, e.y) - Offset(player.x, player.y)).distance <
           e.radius + 18) {
         e.dead = true;
-        hp -= 20;
+        hp -= e.tier.damage;
         _boom(e.x, e.y, const Color(0xFFFF6A40));
         if (e.tier == EnemyTier.bomber) {
           explosionZones.add(ExplosionZone(e.x, e.y));
@@ -434,6 +436,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
               250 + i.abs() * 22,
               false,
               dx: i * 45,
+              damage: EnemyConfig.bossDamageFor(stage),
             ),
           );
         }
