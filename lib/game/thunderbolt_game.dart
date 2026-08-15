@@ -353,7 +353,10 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       final availableTypes = TreasureType.values
           .where((type) => _weaponLevel(type) < PlayerConfig.maxWeaponLevel)
           .toList();
-      if (availableTypes.isEmpty) return;
+      if (availableTypes.isEmpty) {
+        hp = min(PlayerConfig.maxHp, hp + PlayerConfig.maxWeaponsTreasureHeal);
+        return;
+      }
       upgradeType = availableTypes[rng.nextInt(availableTypes.length)];
     }
 
@@ -970,7 +973,10 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       tp.render(c, 'BOSS  $remain', Vector2(size.x - 90, top + 18));
     }
     tp.render(c, 'STAGE $stage', Vector2(size.x - 86, top + 43));
-    final weapons = 'A$powerLevel  B$missileLevel  C$lightningLevel';
+    final weapons =
+        '${_weaponHudLevel('A', powerLevel)}  '
+        '${_weaponHudLevel('B', missileLevel)}  '
+        '${_weaponHudLevel('C', lightningLevel)}';
     TextPaint(
       style: const TextStyle(
         color: Color(0xFFFFD76A),
@@ -1012,5 +1018,9 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
         _ => 'STAGE 3 · 蒼藍鑽皇',
       }, Vector2(size.x / 2 - 88, size.y * .58));
     }
+  }
+
+  String _weaponHudLevel(String name, int level) {
+    return level >= PlayerConfig.maxWeaponLevel ? '$name MAX' : '$name$level';
   }
 }

@@ -11,4 +11,5 @@ abstract final class PlayerConfig {
   static const int lightningDamage = 2;
   static const int missileDamage = 4;
   static const int maxWeaponLevel = 5;
+  static const int maxWeaponsTreasureHeal = 10;
 }

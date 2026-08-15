@@ -67,18 +67,20 @@ abstract final class EnemyConfig {
   static const double thirdBossDrillInterval = 7.5;
   static const int thirdBossDrillDamage = 50;
 
-  static const List<double> firstStageEliteSchedule = [10, 23, 36, 49, 62];
+  static const List<double> firstStageEliteSchedule = [9, 20, 31, 42, 53, 64];
   static const List<double> secondStageEliteSchedule = [
-    9,
-    19,
-    29,
-    39,
-    49,
-    59,
-    69,
-    79,
+    8,
+    17,
+    26,
+    35,
+    44,
+    53,
+    62,
+    71,
+    80,
     89,
-    99,
+    98,
+    105,
   ];
   static double enemyPhaseEndFor(int stage) => switch (stage) {
     1 => 75,
