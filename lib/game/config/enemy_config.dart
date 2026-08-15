@@ -53,6 +53,8 @@ extension EnemyTierConfig on EnemyTier {
 }
 
 abstract final class EnemyConfig {
+  static const double secondBossBomberInterval = 6.5;
+
   static const List<double> firstStageEliteSchedule = [10, 23, 36, 49, 62];
   static const List<double> secondStageEliteSchedule = [
     9,

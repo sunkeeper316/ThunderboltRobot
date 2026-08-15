@@ -48,6 +48,7 @@ class _GameFlowState extends State<GameFlow> {
     selectedStage = stage;
     final next = ThunderboltGame(
       initialStage: stage,
+      hudTopPadding: MediaQuery.viewPaddingOf(context).top + 8,
       onStageCleared: _recordStageClear,
       onFinished: (won, finalScore) {
         if (!mounted) return;

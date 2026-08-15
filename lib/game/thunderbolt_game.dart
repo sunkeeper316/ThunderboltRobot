@@ -22,10 +22,12 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
     required this.onFinished,
     this.initialStage = 1,
     this.onStageCleared,
+    this.hudTopPadding = 0,
   }) : stage = initialStage;
   final FinishCallback onFinished;
   final StageClearedCallback? onStageCleared;
   final int initialStage;
+  final double hudTopPadding;
   final rng = Random();
   final bullets = <Shot>[];
   final enemies = <Foe>[];
@@ -349,6 +351,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
   void _updateExplosionZones(double dt) {
     for (final zone in explosionZones) {
       zone.life -= dt;
+      zone.y += ExplosionZone.scrollSpeed * dt;
       if (!zone.damagedPlayer &&
           (Offset(zone.x, zone.y) - Offset(player.x, player.y)).distance <
               ExplosionZone.radius + 18) {
@@ -357,7 +360,9 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
         _boom(player.x, player.y, const Color(0xFFFF6A32), count: 12);
       }
     }
-    explosionZones.removeWhere((zone) => zone.life <= 0);
+    explosionZones.removeWhere(
+      (zone) => zone.life <= 0 || zone.y - ExplosionZone.radius > size.y + 20,
+    );
   }
 
   void _updateEnemies(double dt) {
@@ -412,6 +417,13 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       b.active = true;
       b.x = size.x / 2 + sin(elapsed * .8) * size.x * .28;
       b.fire += dt;
+      if (stage == 2) {
+        b.summonClock += dt;
+        if (b.summonClock >= EnemyConfig.secondBossBomberInterval) {
+          b.summonClock = 0;
+          _summonBossBombers(b);
+        }
+      }
       if (b.fire > .52) {
         b.fire = 0;
         for (var i = -2; i <= 2; i++) {
@@ -426,6 +438,25 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
           );
         }
       }
+    }
+  }
+
+  void _summonBossBombers(Boss boss) {
+    for (final side in [-1.0, 1.0]) {
+      final x = (boss.x + side * 72).clamp(32.0, size.x - 32);
+      final y = boss.y + 76;
+      enemies.add(
+        Foe(
+          x,
+          y,
+          EnemyTier.bomber.radius,
+          EnemyTier.bomber.hp,
+          EnemyTier.bomber.speed,
+          rng.nextDouble() * pi * 2,
+          EnemyTier.bomber,
+        ),
+      );
+      _boom(x, y, const Color(0xFFFF7138), count: 8);
     }
   }
 
@@ -717,7 +748,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
   }
 
   void _drawExplosionZone(Canvas c, ExplosionZone zone) {
-    final progress = (zone.life / 3).clamp(0.0, 1.0);
+    final progress = (zone.life / ExplosionZone.duration).clamp(0.0, 1.0);
     final pulse = .88 + sin(elapsed * 18) * .12;
     final center = Offset(zone.x, zone.y);
     final radius = ExplosionZone.radius * pulse;
@@ -817,6 +848,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
   }
 
   void _drawHud(Canvas c) {
+    final top = hudTopPadding;
     final tp = TextPaint(
       style: const TextStyle(
         color: Color(0xFFE9FBFF),
@@ -824,10 +856,14 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
         fontWeight: FontWeight.bold,
       ),
     );
-    tp.render(c, 'SCORE  ${score.toString().padLeft(6, '0')}', Vector2(18, 18));
+    tp.render(
+      c,
+      'SCORE  ${score.toString().padLeft(6, '0')}',
+      Vector2(18, top + 18),
+    );
     c.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromLTWH(18, 45, size.x * .38, 9),
+        Rect.fromLTWH(18, top + 45, size.x * .38, 9),
         const Radius.circular(5),
       ),
       Paint()..color = const Color(0x553C6170),
@@ -836,7 +872,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       RRect.fromRectAndRadius(
         Rect.fromLTWH(
           18,
-          45,
+          top + 45,
           size.x * .38 * (hp / PlayerConfig.maxHp).clamp(0, 1),
           9,
         ),
@@ -849,8 +885,10 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       0,
       EnemyConfig.bossStartTimeFor(stage) - stageElapsed,
     ).ceil();
-    if (boss == null) tp.render(c, 'BOSS  $remain', Vector2(size.x - 90, 18));
-    tp.render(c, 'STAGE $stage', Vector2(size.x - 86, 43));
+    if (boss == null) {
+      tp.render(c, 'BOSS  $remain', Vector2(size.x - 90, top + 18));
+    }
+    tp.render(c, 'STAGE $stage', Vector2(size.x - 86, top + 43));
     final weapons = 'A$powerLevel  B$missileLevel  C$lightningLevel';
     TextPaint(
       style: const TextStyle(
@@ -858,21 +896,21 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
         fontSize: 13,
         fontWeight: FontWeight.bold,
       ),
-    ).render(c, weapons, Vector2(18, 61));
+    ).render(c, weapons, Vector2(18, top + 61));
     if (boss case final b?) {
       tp.render(c, switch (stage) {
         1 => 'VOID REAPER',
         2 => 'CRIMSON DREADNOUGHT',
         _ => 'AZURE DRILL TYRANT',
-      }, Vector2(size.x / 2 - 65, 62));
+      }, Vector2(size.x / 2 - 65, top + 62));
       c.drawRect(
-        Rect.fromLTWH(30, 85, size.x - 60, 8),
+        Rect.fromLTWH(30, top + 85, size.x - 60, 8),
         Paint()..color = const Color(0x554D1122),
       );
       c.drawRect(
         Rect.fromLTWH(
           30,
-          85,
+          top + 85,
           (size.x - 60) * (b.hp / EnemyConfig.bossHpFor(stage)).clamp(0, 1),
           8,
         ),
