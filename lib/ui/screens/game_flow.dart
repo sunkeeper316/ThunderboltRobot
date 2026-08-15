@@ -2,6 +2,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
 import '../../game/thunderbolt_game.dart';
+import '../../game/config/primary_weapon_config.dart';
 import '../../services/progress_service.dart';
 import 'home_screen.dart';
 import 'result_screen.dart';
@@ -24,6 +25,7 @@ class _GameFlowState extends State<GameFlow> {
   int score = 0;
   int highestUnlockedStage = 1;
   int selectedStage = 1;
+  PrimaryWeaponType selectedPrimaryWeapon = PrimaryWeaponType.cannon;
   final progressService = ProgressService();
 
   @override
@@ -44,10 +46,12 @@ class _GameFlowState extends State<GameFlow> {
     setState(() => highestUnlockedStage = unlocked);
   }
 
-  void startBattle([int stage = 1]) {
+  void startBattle(int stage, PrimaryWeaponType primaryWeapon) {
     selectedStage = stage;
+    selectedPrimaryWeapon = primaryWeapon;
     final next = ThunderboltGame(
       initialStage: stage,
+      primaryWeapon: primaryWeapon,
       hudTopPadding: MediaQuery.viewPaddingOf(context).top + 8,
       onStageCleared: _recordStageClear,
       onFinished: (won, finalScore) {
@@ -71,25 +75,36 @@ class _GameFlowState extends State<GameFlow> {
       duration: const Duration(milliseconds: 350),
       child: switch (screen) {
         FlowScreen.home => HomeScreen(
-          onStart: () => setState(() => screen = FlowScreen.select),
+          onStart: () => setState(() {
+            selectedStage = 1;
+            screen = FlowScreen.select;
+          }),
           onStageSelect: highestUnlockedStage > 1
               ? () => setState(() => screen = FlowScreen.stageSelect)
               : null,
         ),
         FlowScreen.select => RobotSelectScreen(
-          onStart: () => startBattle(1),
-          onBack: () => setState(() => screen = FlowScreen.home),
+          stage: selectedStage,
+          onStart: (weapon) => startBattle(selectedStage, weapon),
+          onBack: () => setState(
+            () => screen = selectedStage == 1
+                ? FlowScreen.home
+                : FlowScreen.stageSelect,
+          ),
         ),
         FlowScreen.stageSelect => StageSelectScreen(
           highestUnlockedStage: highestUnlockedStage,
-          onSelect: startBattle,
+          onSelect: (stage) => setState(() {
+            selectedStage = stage;
+            screen = FlowScreen.select;
+          }),
           onBack: () => setState(() => screen = FlowScreen.home),
         ),
         FlowScreen.battle => GameWidget(game: game!),
         FlowScreen.result => ResultScreen(
           victory: victory,
           score: score,
-          onRetry: () => startBattle(selectedStage),
+          onRetry: () => startBattle(selectedStage, selectedPrimaryWeapon),
           onHome: () => setState(() => screen = FlowScreen.home),
         ),
       },

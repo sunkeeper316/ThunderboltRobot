@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import 'config/enemy_config.dart';
 import 'config/player_config.dart';
+import 'config/primary_weapon_config.dart';
 import 'entities/boss.dart';
 import 'entities/explosion_zone.dart';
 import 'entities/foe.dart';
@@ -21,12 +22,14 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
   ThunderboltGame({
     required this.onFinished,
     this.initialStage = 1,
+    this.primaryWeapon = PrimaryWeaponType.cannon,
     this.onStageCleared,
     this.hudTopPadding = 0,
   }) : stage = initialStage;
   final FinishCallback onFinished;
   final StageClearedCallback? onStageCleared;
   final int initialStage;
+  final PrimaryWeaponType primaryWeapon;
   final double hudTopPadding;
   final rng = Random();
   final bullets = <Shot>[];
@@ -41,7 +44,8 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       stageElapsed = 0,
       shotClock = 0,
       spawnClock = 0,
-      missileClock = 0;
+      missileClock = 0,
+      laserDamageClock = 0;
   int score = 0;
   int stage;
   int powerLevel = 0;
@@ -111,6 +115,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
     shotClock += dt;
     missileClock += dt;
     spawnClock += dt;
+    laserDamageClock += dt;
     for (final s in stars) {
       s.y += s.speed * dt;
       if (s.y > size.y) {
@@ -121,6 +126,11 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
     if (shotClock > PlayerConfig.fireInterval) {
       shotClock = 0;
       _firePlayerWeapons();
+    }
+    if (primaryWeapon == PrimaryWeaponType.laser &&
+        laserDamageClock >= PrimaryWeaponConfig.laserDamageInterval) {
+      laserDamageClock = 0;
+      _applyPrimaryLaserDamage();
     }
     if (missileLevel > 0 && missileClock > PlayerConfig.missileInterval) {
       missileClock = 0;
@@ -198,18 +208,20 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
   }
 
   void _firePlayerWeapons() {
-    final bulletCount = 2 + powerLevel;
-    for (var i = 0; i < bulletCount; i++) {
-      final offset = (i - (bulletCount - 1) / 2) * 14;
-      bullets.add(
-        Shot(
-          player.x + offset,
-          player.y - 30,
-          PlayerConfig.bulletSpeed,
-          true,
-          damage: PlayerConfig.normalDamage,
-        ),
-      );
+    if (primaryWeapon == PrimaryWeaponType.cannon) {
+      final bulletCount = 2 + powerLevel;
+      for (var i = 0; i < bulletCount; i++) {
+        final offset = (i - (bulletCount - 1) / 2) * 14;
+        bullets.add(
+          Shot(
+            player.x + offset,
+            player.y - 30,
+            PlayerConfig.bulletSpeed,
+            true,
+            damage: PlayerConfig.normalDamage,
+          ),
+        );
+      }
     }
     if (lightningLevel > 0) {
       final halfFan = (lightningLevel - 1) * 6.0;
@@ -244,6 +256,30 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
     }
   }
 
+  void _applyPrimaryLaserDamage() {
+    final width = PrimaryWeaponConfig.laserWidthFor(powerLevel);
+    final damage = PrimaryWeaponConfig.laserDamageFor(powerLevel);
+    for (final enemy in enemies.where((enemy) => !enemy.dead)) {
+      final isAbovePlayer = enemy.y < player.y - 22;
+      final touchesBeam =
+          (enemy.x - player.x).abs() <= enemy.radius + width / 2;
+      if (!isAbovePlayer || !touchesBeam) continue;
+      enemy.hp -= damage;
+      if (enemy.hp <= 0) _destroyEnemy(enemy);
+    }
+
+    final currentBoss = boss;
+    if (currentBoss != null &&
+        currentBoss.active &&
+        currentBoss.hp > 0 &&
+        currentBoss.y < player.y &&
+        (currentBoss.x - player.x).abs() <=
+            EnemyConfig.bossHitRadiusFor(stage) + width / 2) {
+      currentBoss.hp -= damage;
+      if (currentBoss.hp <= 0) _defeatBoss(currentBoss);
+    }
+  }
+
   void _updateBullets(double dt) {
     for (final b in bullets) {
       if (b.kind == ShotKind.missile && b.friendly) _guideMissile(b, dt);
@@ -255,23 +291,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
         if ((Offset(b.x, b.y) - Offset(e.x, e.y)).distance < e.radius + 5) {
           b.dead = true;
           e.hp -= b.damage;
-          if (e.hp <= 0) {
-            e.dead = true;
-            score += e.tier.score;
-            _boom(e.x, e.y, const Color(0xFFFF8A35));
-            if (e.tier == EnemyTier.elite) {
-              treasures.add(
-                Treasure(
-                  e.x,
-                  e.y,
-                  TreasureType.values[rng.nextInt(TreasureType.values.length)],
-                ),
-              );
-            }
-            if (e.tier == EnemyTier.bomber) {
-              explosionZones.add(ExplosionZone(e.x, e.y));
-            }
-          }
+          if (e.hp <= 0) _destroyEnemy(e);
           break;
         }
       }
@@ -283,16 +303,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
               EnemyConfig.bossHitRadiusFor(stage)) {
         b.dead = true;
         bo.hp -= b.damage;
-        if (bo.hp <= 0) {
-          score += 5000;
-          _boom(bo.x, bo.y, const Color(0xFF62EAFF), count: 80);
-          onStageCleared?.call(stage);
-          if (stage < 3) {
-            _startNextStage();
-          } else {
-            _finish(true);
-          }
-        }
+        if (bo.hp <= 0) _defeatBoss(bo);
       }
     }
     for (final b in bullets.where((b) => !b.friendly && !b.dead)) {
@@ -312,6 +323,37 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
           b.x < -50 ||
           b.x > size.x + 50,
     );
+  }
+
+  void _destroyEnemy(Foe enemy) {
+    if (enemy.dead) return;
+    enemy.dead = true;
+    score += enemy.tier.score;
+    _boom(enemy.x, enemy.y, const Color(0xFFFF8A35));
+    if (enemy.tier == EnemyTier.elite) {
+      treasures.add(
+        Treasure(
+          enemy.x,
+          enemy.y,
+          TreasureType.values[rng.nextInt(TreasureType.values.length)],
+        ),
+      );
+    }
+    if (enemy.tier == EnemyTier.bomber) {
+      explosionZones.add(ExplosionZone(enemy.x, enemy.y));
+    }
+  }
+
+  void _defeatBoss(Boss defeatedBoss) {
+    if (defeatedBoss.hp > 0) return;
+    score += 5000;
+    _boom(defeatedBoss.x, defeatedBoss.y, const Color(0xFF62EAFF), count: 80);
+    onStageCleared?.call(stage);
+    if (stage < 3) {
+      _startNextStage();
+    } else {
+      _finish(true);
+    }
   }
 
   void _guideMissile(Shot b, double dt) {
@@ -598,6 +640,9 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
           ),
       );
     }
+    if (primaryWeapon == PrimaryWeaponType.laser && !ended) {
+      _drawPrimaryLaser(c);
+    }
     for (final b in bullets) {
       final color = switch (b.kind) {
         ShotKind.missile => const Color(0xFFFFD34F),
@@ -672,6 +717,45 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
         height: 97,
       ),
       Paint()..filterQuality = FilterQuality.none,
+    );
+  }
+
+  void _drawPrimaryLaser(Canvas c) {
+    final width = PrimaryWeaponConfig.laserWidthFor(powerLevel);
+    final pulse = .82 + sin(elapsed * 24) * .18;
+    final start = Offset(player.x, player.y - 35);
+    final end = Offset(player.x, 0);
+    c.drawLine(
+      start,
+      end,
+      Paint()
+        ..color = const Color(0xAA00AFFF)
+        ..strokeWidth = (width + 18) * pulse
+        ..strokeCap = StrokeCap.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14),
+    );
+    c.drawLine(
+      start,
+      end,
+      Paint()
+        ..color = const Color(0xFF36DFFF)
+        ..strokeWidth = width
+        ..strokeCap = StrokeCap.round,
+    );
+    c.drawLine(
+      start,
+      end,
+      Paint()
+        ..color = Colors.white
+        ..strokeWidth = max(2, width * .3)
+        ..strokeCap = StrokeCap.round,
+    );
+    c.drawCircle(
+      start,
+      width * .9,
+      Paint()
+        ..color = const Color(0xCC69EEFF)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
     );
   }
 
