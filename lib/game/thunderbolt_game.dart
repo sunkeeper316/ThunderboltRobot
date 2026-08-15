@@ -139,7 +139,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       }
     }
     final spawnInterval = stage == 3
-        ? max(.34, .78 - stageElapsed * .004)
+        ? max(.48, .95 - stageElapsed * .004)
         : max(.38, 1.05 - stageElapsed * .008);
     if (stageElapsed < EnemyConfig.enemyPhaseEndFor(stage) &&
         spawnClock > spawnInterval) {

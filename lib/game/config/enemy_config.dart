@@ -15,8 +15,8 @@ extension EnemyTierConfig on EnemyTier {
 
   int get hp => switch (this) {
     EnemyTier.small => 1,
-    EnemyTier.medium => 10,
-    EnemyTier.elite => 20,
+    EnemyTier.medium => 8,
+    EnemyTier.elite => 10,
     EnemyTier.bomber => 5,
     EnemyTier.drill => 40,
   };

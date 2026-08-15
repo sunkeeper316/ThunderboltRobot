@@ -9,6 +9,6 @@ abstract final class PlayerConfig {
 
   static const int normalDamage = 1;
   static const int lightningDamage = 2;
-  static const int missileDamage = 2;
+  static const int missileDamage = 4;
   static const int maxWeaponLevel = 5;
 }
