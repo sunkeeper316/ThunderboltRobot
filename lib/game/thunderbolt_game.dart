@@ -46,6 +46,8 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
   late final ui.Image bossSprite;
   late final ui.Image rainbowEnemySprite;
   late final ui.Image bomberEnemySprite;
+  late final ui.Image battleshipBossSprite;
+  late final ui.Image drillBossSprite;
 
   @override
   Future<void> onLoad() async {
@@ -54,6 +56,8 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
     bossSprite = await images.load('boss_robot_red.png');
     rainbowEnemySprite = await images.load('enemy_robot_rainbow.png');
     bomberEnemySprite = await images.load('enemy_robot_bomber.png');
+    battleshipBossSprite = await images.load('boss_battleship_red.png');
+    drillBossSprite = await images.load('boss_drill_robot_red_blue.png');
     player = Vector2(size.x / 2, size.y * .78);
     for (var i = 0; i < 85; i++) {
       stars.add(
@@ -247,14 +251,15 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       if (!b.dead &&
           bo != null &&
           bo.active &&
-          (Offset(b.x, b.y) - Offset(bo.x, bo.y)).distance < 58) {
+          (Offset(b.x, b.y) - Offset(bo.x, bo.y)).distance <
+              EnemyConfig.bossHitRadiusFor(stage)) {
         b.dead = true;
         bo.hp -= b.damage;
         if (bo.hp <= 0) {
           score += 5000;
           _boom(bo.x, bo.y, const Color(0xFF62EAFF), count: 80);
-          if (stage == 1) {
-            _startSecondStage();
+          if (stage < 3) {
+            _startNextStage();
           } else {
             _finish(true);
           }
@@ -365,7 +370,12 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
   void _updateBoss(double dt) {
     final b = boss;
     if (b == null || b.hp <= 0) return;
-    if (b.y < 115) {
+    final targetY = switch (stage) {
+      1 => 115.0,
+      2 => 125.0,
+      _ => 135.0,
+    };
+    if (b.y < targetY) {
       b.y += 55 * dt;
     } else {
       b.active = true;
@@ -375,7 +385,13 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
         b.fire = 0;
         for (var i = -2; i <= 2; i++) {
           bullets.add(
-            Shot(b.x + i * 16, b.y + 38, 250 + i.abs() * 22, false, dx: i * 45),
+            Shot(
+              b.x + i * (stage == 1 ? 16 : 28),
+              b.y + (stage == 1 ? 38 : 88),
+              250 + i.abs() * 22,
+              false,
+              dx: i * 45,
+            ),
           );
         }
       }
@@ -391,8 +407,8 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
     particles.removeWhere((p) => p.life <= 0);
   }
 
-  void _startSecondStage() {
-    stage = 2;
+  void _startNextStage() {
+    stage++;
     stageElapsed = 0;
     scheduledElites = 0;
     spawnClock = 0;
@@ -727,10 +743,29 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
   }
 
   void _drawBoss(Canvas c, Boss b) {
+    final sprite = switch (stage) {
+      1 => bossSprite,
+      2 => battleshipBossSprite,
+      _ => drillBossSprite,
+    };
+    final source = switch (stage) {
+      1 => EnemyConfig.bossSpriteSource,
+      2 => EnemyConfig.battleshipSpriteSource,
+      _ => EnemyConfig.drillBossSpriteSource,
+    };
+    final bossSize = switch (stage) {
+      1 => const Size(142, 176),
+      2 => const Size(246, 238),
+      _ => const Size(218, 250),
+    };
     c.drawImageRect(
-      bossSprite,
-      EnemyConfig.bossSpriteSource,
-      Rect.fromCenter(center: Offset(b.x, b.y), width: 142, height: 176),
+      sprite,
+      source,
+      Rect.fromCenter(
+        center: Offset(b.x, b.y),
+        width: bossSize.width,
+        height: bossSize.height,
+      ),
       Paint()..filterQuality = FilterQuality.none,
     );
   }
@@ -779,11 +814,11 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       ),
     ).render(c, weapons, Vector2(18, 61));
     if (boss case final b?) {
-      tp.render(
-        c,
-        stage == 1 ? 'VOID REAPER' : 'CRIMSON OVERLORD',
-        Vector2(size.x / 2 - 65, 62),
-      );
+      tp.render(c, switch (stage) {
+        1 => 'VOID REAPER',
+        2 => 'CRIMSON DREADNOUGHT',
+        _ => 'AZURE DRILL TYRANT',
+      }, Vector2(size.x / 2 - 65, 62));
       c.drawRect(
         Rect.fromLTWH(30, 85, size.x - 60, 8),
         Paint()..color = const Color(0x554D1122),
@@ -806,11 +841,11 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
           fontWeight: FontWeight.bold,
         ),
       );
-      hint.render(
-        c,
-        stage == 1 ? 'STAGE 1 · 銀河前線' : 'STAGE 2 · 赤色風暴',
-        Vector2(size.x / 2 - 88, size.y * .58),
-      );
+      hint.render(c, switch (stage) {
+        1 => 'STAGE 1 · 銀河前線',
+        2 => 'STAGE 2 · 赤色風暴',
+        _ => 'STAGE 3 · 蒼藍鑽皇',
+      }, Vector2(size.x / 2 - 88, size.y * .58));
     }
   }
 }

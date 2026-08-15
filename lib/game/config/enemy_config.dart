@@ -60,15 +60,49 @@ abstract final class EnemyConfig {
     89,
     99,
   ];
+  static const List<double> thirdStageEliteSchedule = [
+    20,
+    42,
+    64,
+    86,
+    108,
+    130,
+    152,
+    174,
+    196,
+    218,
+  ];
 
-  static double enemyPhaseEndFor(int stage) => stage == 1 ? 75 : 110;
-  static double bossStartTimeFor(int stage) => stage == 1 ? 78 : 114;
-  static int bossHpFor(int stage) => stage == 1 ? 260 : 420;
-  static List<double> eliteScheduleFor(int stage) =>
-      stage == 1 ? firstStageEliteSchedule : secondStageEliteSchedule;
+  static double enemyPhaseEndFor(int stage) => switch (stage) {
+    1 => 75,
+    2 => 110,
+    _ => 225,
+  };
+  static double bossStartTimeFor(int stage) => switch (stage) {
+    1 => 78,
+    2 => 114,
+    _ => 234,
+  };
+  static int bossHpFor(int stage) => switch (stage) {
+    1 => 260,
+    2 => 420,
+    _ => 650,
+  };
+  static double bossHitRadiusFor(int stage) => switch (stage) {
+    1 => 58,
+    2 => 108,
+    _ => 104,
+  };
+  static List<double> eliteScheduleFor(int stage) => switch (stage) {
+    1 => firstStageEliteSchedule,
+    2 => secondStageEliteSchedule,
+    _ => thirdStageEliteSchedule,
+  };
 
   static const Rect redSpriteSource = Rect.fromLTWH(182, 173, 780, 1012);
   static const Rect rainbowSpriteSource = Rect.fromLTWH(197, 133, 752, 1081);
   static const Rect bossSpriteSource = Rect.fromLTWH(18, 52, 989, 1432);
   static const Rect bomberSpriteSource = Rect.fromLTWH(117, 77, 900, 1171);
+  static const Rect battleshipSpriteSource = Rect.fromLTWH(23, 45, 1208, 1181);
+  static const Rect drillBossSpriteSource = Rect.fromLTWH(30, 15, 1146, 1280);
 }
