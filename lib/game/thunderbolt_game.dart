@@ -58,6 +58,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
   late final ui.Image battleshipBossSprite;
   late final ui.Image drillBossSprite;
   late final ui.Image drillEnemySprite;
+  late final ui.Image drillProjectileSprite;
 
   @override
   Future<void> onLoad() async {
@@ -69,6 +70,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
     battleshipBossSprite = await images.load('boss_battleship_red.png');
     drillBossSprite = await images.load('boss_drill_robot_red_blue.png');
     drillEnemySprite = await images.load('enemy_drill_horizontal.png');
+    drillProjectileSprite = await images.load('boss_drill_projectile.png');
     player = Vector2(size.x / 2, size.y * .78);
     for (var i = 0; i < 85; i++) {
       stars.add(
@@ -289,7 +291,9 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       }
     }
     for (final b in bullets.where((b) => !b.friendly && !b.dead)) {
-      if ((Offset(b.x, b.y) - Offset(player.x, player.y)).distance < 19) {
+      final hitRadius = b.kind == ShotKind.bossDrill ? 34.0 : 19.0;
+      if ((Offset(b.x, b.y) - Offset(player.x, player.y)).distance <
+          hitRadius) {
         b.dead = true;
         hp -= b.damage;
         _boom(player.x, player.y, const Color(0xFF55DDFF), count: 8);
@@ -426,6 +430,13 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
           _summonBossBombers(b);
         }
       }
+      if (stage == 3) {
+        b.drillClock += dt;
+        if (b.drillClock >= EnemyConfig.thirdBossDrillInterval) {
+          b.drillClock = 0;
+          _throwBossDrill(b);
+        }
+      }
       if (b.fire > .52) {
         b.fire = 0;
         for (var i = -2; i <= 2; i++) {
@@ -461,6 +472,26 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       );
       _boom(x, y, const Color(0xFFFF7138), count: 8);
     }
+  }
+
+  void _throwBossDrill(Boss boss) {
+    final origin = Offset(boss.x - 68, boss.y + 55);
+    final target = Offset(player.x, player.y);
+    final direction = target - origin;
+    final distance = max(1.0, direction.distance);
+    const travelSpeed = 260.0;
+    bullets.add(
+      Shot(
+        origin.dx,
+        origin.dy,
+        direction.dy / distance * travelSpeed,
+        false,
+        dx: direction.dx / distance * travelSpeed,
+        kind: ShotKind.bossDrill,
+        damage: EnemyConfig.thirdBossDrillDamage,
+      ),
+    );
+    _boom(origin.dx, origin.dy, const Color(0xFF36DFFF), count: 18);
   }
 
   void _updateParticles(double dt) {
@@ -545,6 +576,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       final color = switch (b.kind) {
         ShotKind.missile => const Color(0xFFFFD34F),
         ShotKind.lightning => const Color(0xFFB96CFF),
+        ShotKind.bossDrill => const Color(0xFF36DFFF),
         ShotKind.normal =>
           b.friendly ? const Color(0xFF67F4FF) : const Color(0xFFFF4567),
       };
@@ -553,10 +585,13 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       final coreColor = switch (b.kind) {
         ShotKind.missile => const Color(0xFFFFFFFF),
         ShotKind.lightning => const Color(0xFFFFFFFF),
+        ShotKind.bossDrill => const Color(0xFFFFFFFF),
         ShotKind.normal =>
           b.friendly ? const Color(0xFFFFFFFF) : const Color(0xFFFFF0B8),
       };
-      if (b.kind == ShotKind.lightning) {
+      if (b.kind == ShotKind.bossDrill) {
+        _drawBossDrill(c, b);
+      } else if (b.kind == ShotKind.lightning) {
         _drawLightning(c, b);
       } else {
         // A wide glow makes projectiles readable against dark space, while
@@ -709,6 +744,26 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
         sparkPaint,
       );
     }
+  }
+
+  void _drawBossDrill(Canvas c, Shot shot) {
+    final angle = atan2(-shot.dx, shot.speed) + sin(elapsed * 24) * .025;
+    c.save();
+    c.translate(shot.x, shot.y);
+    c.rotate(angle);
+    c.drawOval(
+      const Rect.fromLTWH(-28, -53, 56, 106),
+      Paint()
+        ..color = const Color(0x8836DFFF)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
+    );
+    c.drawImageRect(
+      drillProjectileSprite,
+      EnemyConfig.drillProjectileSpriteSource,
+      const Rect.fromLTWH(-24, -52, 48, 104),
+      Paint()..filterQuality = FilterQuality.none,
+    );
+    c.restore();
   }
 
   void _drawEnemy(Canvas c, Foe e) {

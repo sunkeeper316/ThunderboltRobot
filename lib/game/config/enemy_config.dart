@@ -64,6 +64,8 @@ extension EnemyTierConfig on EnemyTier {
 
 abstract final class EnemyConfig {
   static const double secondBossBomberInterval = 6.5;
+  static const double thirdBossDrillInterval = 7.5;
+  static const int thirdBossDrillDamage = 50;
 
   static const List<double> firstStageEliteSchedule = [10, 23, 36, 49, 62];
   static const List<double> secondStageEliteSchedule = [
@@ -129,4 +131,10 @@ abstract final class EnemyConfig {
   static const Rect battleshipSpriteSource = Rect.fromLTWH(23, 45, 1208, 1181);
   static const Rect drillBossSpriteSource = Rect.fromLTWH(30, 15, 1146, 1280);
   static const Rect drillEnemySpriteSource = Rect.fromLTWH(163, 211, 1181, 543);
+  static const Rect drillProjectileSpriteSource = Rect.fromLTWH(
+    220,
+    40,
+    447,
+    1668,
+  );
 }

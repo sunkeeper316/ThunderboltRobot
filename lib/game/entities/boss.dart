@@ -5,6 +5,7 @@ class Boss {
   double y;
   double fire = 0;
   double summonClock = 0;
+  double drillClock = 0;
   int hp;
   bool active = false;
 }

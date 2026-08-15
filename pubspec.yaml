@@ -68,6 +68,7 @@ flutter:
     - assets/images/boss_battleship_red.png
     - assets/images/boss_drill_robot_red_blue.png
     - assets/images/enemy_drill_horizontal.png
+    - assets/images/boss_drill_projectile.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
