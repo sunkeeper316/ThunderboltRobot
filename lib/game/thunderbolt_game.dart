@@ -138,8 +138,11 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
         );
       }
     }
+    final spawnInterval = stage == 3
+        ? max(.34, .78 - stageElapsed * .004)
+        : max(.38, 1.05 - stageElapsed * .008);
     if (stageElapsed < EnemyConfig.enemyPhaseEndFor(stage) &&
-        spawnClock > max(.38, 1.05 - stageElapsed * .008)) {
+        spawnClock > spawnInterval) {
       spawnClock = 0;
       _spawnEnemy();
     }
@@ -163,11 +166,13 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
         stageElapsed >= eliteSchedule[scheduledElites];
     final tier = eliteDue
         ? EnemyTier.elite
-        : stage == 3 && roll < .28
+        : stage == 3 && roll < .25
         ? EnemyTier.drill
+        : stage == 3 && roll < .48
+        ? EnemyTier.bomber
         : stage == 2 && roll < .2
         ? EnemyTier.bomber
-        : stageElapsed > 6 && roll < .52
+        : stageElapsed > 6 && roll < (stage == 3 ? .72 : .52)
         ? EnemyTier.medium
         : EnemyTier.small;
     if (eliteDue) scheduledElites++;
@@ -335,21 +340,39 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       if ((Offset(item.x, item.y) - Offset(player.x, player.y)).distance < 30) {
         item.collected = true;
         score += 500;
-        switch (item.type) {
-          case TreasureType.a:
-            powerLevel = min(PlayerConfig.maxWeaponLevel, powerLevel + 1);
-          case TreasureType.b:
-            missileLevel = min(PlayerConfig.maxWeaponLevel, missileLevel + 1);
-          case TreasureType.c:
-            lightningLevel = min(
-              PlayerConfig.maxWeaponLevel,
-              lightningLevel + 1,
-            );
-        }
+        _upgradeWeapon(item.type);
         _boom(item.x, item.y, item.color, count: 14);
       }
     }
     treasures.removeWhere((item) => item.collected || item.y > size.y + 30);
+  }
+
+  void _upgradeWeapon(TreasureType collectedType) {
+    var upgradeType = collectedType;
+    if (_weaponLevel(upgradeType) >= PlayerConfig.maxWeaponLevel) {
+      final availableTypes = TreasureType.values
+          .where((type) => _weaponLevel(type) < PlayerConfig.maxWeaponLevel)
+          .toList();
+      if (availableTypes.isEmpty) return;
+      upgradeType = availableTypes[rng.nextInt(availableTypes.length)];
+    }
+
+    switch (upgradeType) {
+      case TreasureType.a:
+        powerLevel++;
+      case TreasureType.b:
+        missileLevel++;
+      case TreasureType.c:
+        lightningLevel++;
+    }
+  }
+
+  int _weaponLevel(TreasureType type) {
+    return switch (type) {
+      TreasureType.a => powerLevel,
+      TreasureType.b => missileLevel,
+      TreasureType.c => lightningLevel,
+    };
   }
 
   void _updateExplosionZones(double dt) {
