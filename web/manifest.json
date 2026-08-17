@@ -1,6 +1,6 @@
 {
-    "name": "thunderbolt_robot",
-    "short_name": "thunderbolt_robot",
+    "name": "Thunderbolt",
+    "short_name": "Thunderbolt",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

@@ -8,7 +8,7 @@ class ThunderboltApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
-    title: 'Thunderbolt Robot',
+    title: 'Thunderbolt',
     theme: ThemeData(fontFamily: 'sans', brightness: Brightness.dark),
     home: const GameFlow(),
   );
