@@ -14,6 +14,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    buildFeatures {
+        resValues = true
+    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "studio.sunkeeper.thunderbolt_robot"
@@ -30,6 +34,22 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
+    flavorDimensions += "flavors"
+    productFlavors {
+        create("local") {
+            dimension = "flavors"
+            resValue("string", "app_name", "Thunderbolt local")
+        }
+        create("dev") {
+            dimension = "flavors"
+            resValue("string", "app_name", "Thunderbolt T")
+        }
+        create("prod") {
+            dimension = "flavors"
+            resValue("string", "app_name", "Thunderbolt")
         }
     }
 }
