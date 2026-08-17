@@ -11,6 +11,7 @@ import 'config/secondary_weapon_config.dart';
 import 'entities/boss.dart';
 import 'entities/explosion_zone.dart';
 import 'entities/foe.dart';
+import 'entities/lightning_arc.dart';
 import 'entities/shot.dart';
 import 'entities/spark.dart';
 import 'entities/star.dart';
@@ -43,6 +44,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
   final stars = <Star>[];
   final treasures = <Treasure>[];
   final explosionZones = <ExplosionZone>[];
+  final lightningArcs = <LightningArc>[];
   Vector2 player = Vector2.zero();
   double hp = PlayerConfig.maxHp,
       elapsed = 0,
@@ -50,6 +52,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       shotClock = 0,
       spawnClock = 0,
       missileClock = 0,
+      lightningClock = 0,
       laserDamageClock = 0;
   int score = 0;
   int stage;
@@ -119,6 +122,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
     stageElapsed += dt;
     shotClock += dt;
     missileClock += dt;
+    lightningClock += dt;
     spawnClock += dt;
     laserDamageClock += dt;
     for (final s in stars) {
@@ -145,6 +149,18 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
       _fireTimedSecondary(bWeapon, missileLevel);
       _fireTimedSecondary(cWeapon, lightningLevel);
     }
+    final hasLightning =
+        (bWeapon == SecondaryWeaponType.lightning && missileLevel > 0) ||
+        (cWeapon == SecondaryWeaponType.lightning && lightningLevel > 0);
+    if (hasLightning && lightningClock >= PlayerConfig.lightningInterval) {
+      lightningClock = 0;
+      if (bWeapon == SecondaryWeaponType.lightning) {
+        _fireLightning(missileLevel);
+      }
+      if (cWeapon == SecondaryWeaponType.lightning) {
+        _fireLightning(lightningLevel);
+      }
+    }
     final spawnInterval = stage == 3
         ? max(.48, .95 - stageElapsed * .004)
         : max(.38, 1.05 - stageElapsed * .008);
@@ -160,6 +176,7 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
     _updateEnemies(dt);
     _updateTreasures(dt);
     _updateExplosionZones(dt);
+    _updateLightningArcs(dt);
     _updateBoss(dt);
     _updateParticles(dt);
     if (hp <= 0) _finish(false);
@@ -220,44 +237,79 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
         );
       }
     }
-    if (bWeapon == SecondaryWeaponType.lightning && missileLevel > 0) {
-      _fireLightning(missileLevel);
-    }
-    if (cWeapon == SecondaryWeaponType.lightning && lightningLevel > 0) {
-      _fireLightning(lightningLevel);
-    }
   }
 
   void _fireLightning(int level) {
-    final halfFan = (level - 1) * 6.0;
-    for (var i = 0; i < level; i++) {
-      final angleDegrees = level == 1
-          ? 45.0
-          : 45 - halfFan + (halfFan * 2 * i / (level - 1));
-      final angle = angleDegrees * pi / 180;
-      final horizontalSpeed = sin(angle) * PlayerConfig.lightningTravelSpeed;
-      final verticalSpeed = -cos(angle) * PlayerConfig.lightningTravelSpeed;
-      bullets.addAll([
-        Shot(
-          player.x - 18,
-          player.y - 24,
-          verticalSpeed,
-          true,
-          dx: -horizontalSpeed,
-          kind: ShotKind.lightning,
-          damage: PlayerConfig.lightningDamage,
+    if (level <= 0) return;
+    final origin = Offset(player.x, player.y - 38);
+    final length = size.y * PlayerConfig.lightningLengthScreenRatio;
+    final diagonal = length / sqrt2;
+    final widthScale = 1 + (level - 1) * PlayerConfig.lightningWidthPerLevel;
+    final endpoints = [
+      origin + Offset(-diagonal, -diagonal),
+      origin + Offset(diagonal, -diagonal),
+    ];
+    final damagedEnemies = <Foe>{};
+
+    for (final endpoint in endpoints) {
+      lightningArcs.add(
+        LightningArc(
+          start: origin,
+          end: endpoint,
+          seed: rng.nextInt(1 << 30),
+          life: PlayerConfig.lightningDuration,
+          widthScale: widthScale,
         ),
-        Shot(
-          player.x + 18,
-          player.y - 24,
-          verticalSpeed,
-          true,
-          dx: horizontalSpeed,
-          kind: ShotKind.lightning,
-          damage: PlayerConfig.lightningDamage,
-        ),
-      ]);
+      );
+
+      for (final enemy in enemies.where((enemy) => !enemy.dead)) {
+        if (damagedEnemies.contains(enemy)) continue;
+        final hitWidth =
+            enemy.radius + PlayerConfig.lightningHitWidth * widthScale;
+        if (_distanceToSegment(Offset(enemy.x, enemy.y), origin, endpoint) >
+            hitWidth) {
+          continue;
+        }
+        damagedEnemies.add(enemy);
+        enemy.hp -= PlayerConfig.lightningDamage;
+        if (enemy.hp <= 0) _destroyEnemy(enemy);
+      }
+
+      final currentBoss = boss;
+      if (currentBoss != null &&
+          currentBoss.active &&
+          currentBoss.hp > 0 &&
+          _distanceToSegment(
+                Offset(currentBoss.x, currentBoss.y),
+                origin,
+                endpoint,
+              ) <=
+              EnemyConfig.bossHitRadiusFor(stage) +
+                  PlayerConfig.lightningHitWidth * widthScale) {
+        currentBoss.hp -= PlayerConfig.lightningDamage;
+        if (currentBoss.hp <= 0) _defeatBoss(currentBoss);
+      }
     }
+  }
+
+  double _distanceToSegment(Offset point, Offset start, Offset end) {
+    final segment = end - start;
+    final lengthSquared = segment.distanceSquared;
+    if (lengthSquared == 0) return (point - start).distance;
+    final fromStart = point - start;
+    final projection =
+        ((fromStart.dx * segment.dx + fromStart.dy * segment.dy) /
+                lengthSquared)
+            .clamp(0.0, 1.0);
+    final closest = start + segment * projection;
+    return (point - closest).distance;
+  }
+
+  void _updateLightningArcs(double dt) {
+    for (final arc in lightningArcs) {
+      arc.life -= dt;
+    }
+    lightningArcs.removeWhere((arc) => arc.life <= 0);
   }
 
   bool _usesMissileInterval(SecondaryWeaponType weapon) =>
@@ -752,6 +804,9 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
         );
       }
     }
+    for (final arc in lightningArcs) {
+      _drawLightningArc(c, arc);
+    }
     for (final e in enemies) {
       _drawEnemy(c, e);
     }
@@ -920,6 +975,87 @@ class ThunderboltGame extends FlameGame with DragCallbacks {
         sparkPaint,
       );
     }
+  }
+
+  void _drawLightningArc(Canvas canvas, LightningArc arc) {
+    final age = arc.maxLife - arc.life;
+    final frame = (age / .035).floor();
+    final random = Random(arc.seed + frame * 7919);
+    final delta = arc.end - arc.start;
+    final distance = max(1.0, delta.distance);
+    final along = delta / distance;
+    final perpendicular = Offset(-along.dy, along.dx);
+    final segmentCount = max(8, (distance / 28).ceil());
+    final points = <Offset>[arc.start];
+    final path = Path()..moveTo(arc.start.dx, arc.start.dy);
+
+    for (var i = 1; i <= segmentCount; i++) {
+      final progress = i / segmentCount;
+      final base = arc.start + delta * progress;
+      final envelope = sin(progress * pi);
+      final jitter =
+          (random.nextDouble() - .5) * min(48.0, distance * .13) * envelope;
+      final point = i == segmentCount ? arc.end : base + perpendicular * jitter;
+      points.add(point);
+      path.lineTo(point.dx, point.dy);
+    }
+
+    final branches = Path();
+    final branchCount = max(2, min(6, segmentCount ~/ 3));
+    for (var i = 0; i < branchCount; i++) {
+      final index = 2 + random.nextInt(max(1, points.length - 3));
+      final origin = points[index];
+      final side = random.nextBool() ? 1.0 : -1.0;
+      final length =
+          (13 + random.nextDouble() * min(42.0, distance * .12)) *
+          arc.widthScale;
+      final middle =
+          origin + along * (length * .35) + perpendicular * side * length * .55;
+      final end = origin + along * length + perpendicular * side * length;
+      branches
+        ..moveTo(origin.dx, origin.dy)
+        ..lineTo(middle.dx, middle.dy)
+        ..lineTo(end.dx, end.dy);
+    }
+
+    final fade = (arc.life / arc.maxLife).clamp(0.0, 1.0);
+    final pulse = (.72 + random.nextDouble() * .28) * fade;
+    final glow = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..strokeWidth = 19
+      ..color = const Color(0xFF1677FF).withValues(alpha: .42 * pulse)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 13);
+    canvas.drawPath(path, glow);
+    canvas.drawPath(branches, glow..strokeWidth = 10);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..strokeWidth = 6.5
+        ..color = const Color(0xFF42C8FF).withValues(alpha: pulse),
+    );
+    canvas.drawPath(
+      branches,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..strokeWidth = 2.5
+        ..color = const Color(0xFF9BEAFF).withValues(alpha: pulse),
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..strokeWidth = 2.2
+        ..color = Colors.white.withValues(alpha: pulse),
+    );
   }
 
   void _drawBossDrill(Canvas c, Shot shot) {
