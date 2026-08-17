@@ -10,12 +10,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:thunderbolt_robot/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('opens settings and privacy policy', (WidgetTester tester) async {
     await tester.pumpWidget(const ThunderboltApp());
 
-    // Verify that our counter starts at 0.
     expect(find.text('THUNDERBOLT'), findsOneWidget);
     expect(find.text('開 始 任 務'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('設定'));
+    await tester.pumpAndSettle();
+    expect(find.text('版本'), findsOneWidget);
+    expect(find.text('聯絡我們'), findsOneWidget);
+    expect(find.text('隱私權政策與服務條款'), findsOneWidget);
+
+    await tester.tap(find.text('隱私權政策與服務條款'));
+    await tester.pumpAndSettle();
+    expect(find.text('資料收集'), findsOneWidget);
+    expect(find.text('第三方服務'), findsOneWidget);
   });
 }

@@ -3,8 +3,14 @@ import 'package:flutter/material.dart';
 import '../widgets/glow_button.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, required this.onStart, this.onStageSelect});
+  const HomeScreen({
+    super.key,
+    required this.onStart,
+    required this.onSettings,
+    this.onStageSelect,
+  });
   final VoidCallback onStart;
+  final VoidCallback onSettings;
   final VoidCallback? onStageSelect;
 
   @override
@@ -73,6 +79,24 @@ class HomeScreen extends StatelessWidget {
               ],
               const SizedBox(height: 24),
             ],
+          ),
+        ),
+      ),
+      SafeArea(
+        child: Align(
+          alignment: Alignment.topRight,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: IconButton.filledTonal(
+              onPressed: onSettings,
+              tooltip: '設定',
+              icon: const Icon(Icons.settings_outlined),
+              style: IconButton.styleFrom(
+                foregroundColor: const Color(0xFFEAFBFF),
+                backgroundColor: const Color(0xAA071A2D),
+                side: const BorderSide(color: Color(0x8847DDFB)),
+              ),
+            ),
           ),
         ),
       ),

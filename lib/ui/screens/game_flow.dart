@@ -8,6 +8,7 @@ import '../../services/progress_service.dart';
 import 'home_screen.dart';
 import 'result_screen.dart';
 import 'robot_select_screen.dart';
+import 'settings_screen.dart';
 import 'stage_select_screen.dart';
 
 enum FlowScreen { home, select, stageSelect, battle, result }
@@ -87,6 +88,9 @@ class _GameFlowState extends State<GameFlow> {
       duration: const Duration(milliseconds: 350),
       child: switch (screen) {
         FlowScreen.home => HomeScreen(
+          onSettings: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+          ),
           onStart: () => setState(() {
             selectedStage = 1;
             screen = FlowScreen.select;
