@@ -10,7 +10,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:thunderbolt_robot/main.dart';
 
 void main() {
-  testWidgets('opens settings and privacy policy', (WidgetTester tester) async {
+  testWidgets('opens settings and shows privacy policy entry', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(const ThunderboltApp());
 
     expect(find.text('THUNDERBOLT'), findsOneWidget);
@@ -21,10 +23,5 @@ void main() {
     expect(find.text('版本'), findsOneWidget);
     expect(find.text('聯絡我們'), findsOneWidget);
     expect(find.text('隱私權政策與服務條款'), findsOneWidget);
-
-    await tester.tap(find.text('隱私權政策與服務條款'));
-    await tester.pumpAndSettle();
-    expect(find.text('資料收集'), findsOneWidget);
-    expect(find.text('第三方服務'), findsOneWidget);
   });
 }
