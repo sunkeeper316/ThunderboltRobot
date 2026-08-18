@@ -83,7 +83,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SizedBox(height: 40),
         const Center(
           child: Text(
-            'THUNDERBOLT',
+            'ThunderForce',
             style: TextStyle(
               color: _accent,
               fontWeight: FontWeight.w800,

@@ -33,14 +33,18 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             children: [
               const SizedBox(height: 24),
-              const Text(
-                'THUNDERBOLT',
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 3,
-                  color: Color(0xFFEAFBFF),
-                  shadows: [Shadow(color: Color(0xFF00C8FF), blurRadius: 18)],
+              const FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  'ThunderForce',
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                    color: Color(0xFFEAFBFF),
+                    shadows: [Shadow(color: Color(0xFF00C8FF), blurRadius: 18)],
+                  ),
                 ),
               ),
               const Text(

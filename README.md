@@ -1,4 +1,4 @@
-# Thunderbolt
+# ThunderForce
 
 使用 Flutter 與 Flame 開發的直向宇宙射擊遊戲。玩家選擇機器人後，以拖曳方式移動並自動射擊，擊破敵人、取得武器寶物，最後挑戰關卡 Boss。
 

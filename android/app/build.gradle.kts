@@ -70,15 +70,15 @@ android {
     productFlavors {
         create("local") {
             dimension = "flavors"
-            resValue("string", "app_name", "Thunderbolt local")
+            resValue("string", "app_name", "ThunderForce local")
         }
         create("dev") {
             dimension = "flavors"
-            resValue("string", "app_name", "Thunderbolt T")
+            resValue("string", "app_name", "ThunderForce T")
         }
         create("prod") {
             dimension = "flavors"
-            resValue("string", "app_name", "Thunderbolt")
+            resValue("string", "app_name", "ThunderForce")
         }
     }
 }

@@ -15,7 +15,7 @@ void main() {
   ) async {
     await tester.pumpWidget(const ThunderboltApp());
 
-    expect(find.text('THUNDERBOLT'), findsOneWidget);
+    expect(find.text('ThunderForce'), findsOneWidget);
     expect(find.text('開 始 任 務'), findsOneWidget);
 
     await tester.tap(find.byTooltip('設定'));
