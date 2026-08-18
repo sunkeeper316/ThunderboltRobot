@@ -10,7 +10,7 @@ class PrivacyPolicyScreen extends StatefulWidget {
 
 class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
   static final _privacyPolicyUrl = Uri.parse(
-    'https://sunkeeper316.github.io/sunkeeperstudio_privacy_policy/',
+    'https://sunkeeper316.github.io/thunderbolt_privacy_policy/',
   );
 
   late final WebViewController _webViewController;
