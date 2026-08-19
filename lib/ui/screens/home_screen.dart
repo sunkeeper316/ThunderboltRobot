@@ -17,7 +17,11 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) => Stack(
     fit: StackFit.expand,
     children: [
-      Image.asset('assets/images/hero_robot.png', fit: BoxFit.cover),
+      Image.asset(
+        'assets/images/hero_robot_2.png',
+        fit: BoxFit.cover,
+        alignment: Alignment.topCenter,
+      ),
       const DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(

@@ -62,7 +62,7 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
-    - assets/images/hero_robot.png
+    - assets/images/hero_robot_2.png
     - assets/images/player_robot_pixel.png
     - assets/images/enemy_robot_red.png
     - assets/images/boss_robot_red.png

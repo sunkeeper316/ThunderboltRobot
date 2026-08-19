@@ -96,7 +96,7 @@ class _RobotSelectScreenState extends State<RobotSelectScreen> {
                     fit: StackFit.expand,
                     children: [
                       Image.asset(
-                        'assets/images/hero_robot.png',
+                        'assets/images/hero_robot_2.png',
                         fit: BoxFit.cover,
                         alignment: Alignment.bottomCenter,
                       ),
